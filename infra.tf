@@ -2,6 +2,12 @@ provider "aws" {
     region = "us-west-2"
 }
 
+provider "helm" {
+    kubernetes {
+        config_path = "/home/matthew/.kube/config"
+    }
+}
+
 // create VPC setup
 // need 1 VPC, 3 subnets, a internet gateway, nessersary routes
 
@@ -132,6 +138,9 @@ resource "aws_eks_cluster" "test_cluster" {
     vpc_config {
         subnet_ids = [ aws_subnet.a.id, aws_subnet.b.id, aws_subnet.c.id ]
     }
+    provisioner "local-exec" {
+        command = "aws eks --region us-west-2 update-kubeconfig --name test_cluster"
+    }
 }
 
 //create the node group
@@ -147,4 +156,18 @@ resource "aws_eks_node_group" "test_cluster_node_group" {
         min_size = 1
     }
     instance_types = [ "t3.large" ]
+}
+
+// install argocd helm chart
+
+resource "helm_release" "argocd" {
+    name = "argocd"
+    repository = "https://argoproj.github.io/argo-helm"
+    chart = "argo-cd"
+    depends_on = [ aws_eks_node_group.test_cluster_node_group ]
+    set {
+        name = "server.service.type"
+        value = "LoadBalancer"
+    }
+
 }
