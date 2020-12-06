@@ -93,6 +93,7 @@ resource "aws_security_group" "eks_api_plane_sg" {
         protocol = "-1"
         cidr_blocks = ["0.0.0.0/0"]
     }
+    depends_on = [ aws_vpc.eks_vpc ]
 }
 
 // create the nessersary IAM roles
